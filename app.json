@@ -1,7 +1,7 @@
 {
   "name": "edu-telegrambot",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "echo \"Test\",
     "postdeploy": "npm start"
   },
   "env": {
