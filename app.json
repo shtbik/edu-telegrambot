@@ -1,0 +1,19 @@
+{
+  "name": "edu-telegrambot",
+  "scripts": {
+    "test": "echo \"Test\"",
+    "postdeploy": "npm start"
+  },
+  "env": {
+  },
+  "formation": {
+  },
+  "addons": [
+
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
