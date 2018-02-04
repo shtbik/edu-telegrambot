@@ -2,7 +2,7 @@
 const TelegramBot = require('node-telegram-bot-api')
 
 // Устанавливаем токен, который выдавал нам бот.
-const { token } = require('./token.js')
+const token = process.env.TOKEN || require('./token.js')
 
 // Включить опрос сервера
 const bot = new TelegramBot(token, { polling: true })
