@@ -8,10 +8,7 @@ Go to [git site](https://git-scm.com/downloads) and download/install a version f
 Go to [Node JS](https://nodejs.org/en/) site and pick the latest version
 
 ### **3. Clone the repository and install dependencies**
-	git clone https://github.com/shtbik/product-cart.git
-	cd product-cart
-	yarn add --global webpack babel
-	yarn add --global --production windows-build-tools (for node-sass windows user)
-	yarn install
-	yarn start
-	go to http://localhost:3000/
+	git clone https://github.com/shtbik/edu-telegrambot.git
+	cd edu-telegrambot
+	npm install
+	npm start
