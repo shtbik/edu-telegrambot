@@ -1,6 +1,7 @@
 {
   "name": "edu-telegrambot",
   "scripts": {
+    "test": "npm start"
     "postdeploy": "npm start"
   },
   "env": {
