@@ -1,6 +1,8 @@
 node_modules
 npm-debug.*
 package-lock.json
+token.js
+
 
 ### macOS ###
 *.DS_Store
