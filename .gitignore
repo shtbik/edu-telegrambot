@@ -1,8 +1,6 @@
 node_modules
 npm-debug.*
-static/*hot-update*
-static/*bundle*
-static/meta.json
+package-lock.json
 
 ### macOS ###
 *.DS_Store
