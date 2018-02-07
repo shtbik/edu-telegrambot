@@ -7,6 +7,9 @@ const token = process.env.TOKEN || require('./token.js')
 // Включить опрос сервера
 const bot = new TelegramBot(token, { polling: true })
 
+let query = []
+const lastIndex = 4
+
 // Ассинхронная функция, ожидаем пока получим данные (переменная data) для вопросов
 require('./grabber.js')(function(data) {
 	// Запускает процесс, при вводе пользователя команды /start
@@ -35,6 +38,9 @@ require('./grabber.js')(function(data) {
 		// 	text: '/start',
 		// 	entities: [{ offset: 0, length: 6, type: 'bot_command' }],
 		// }
+
+		// Сбрасываем значения от предыдущих владельцев
+		query = []
 		newQuestion(msg, 0)
 	})
 
@@ -65,12 +71,19 @@ require('./grabber.js')(function(data) {
 		bot.sendMessage(chat, text, options)
 	}
 
+	function searchResult(msg) {
+		console.log('Result: ', query.join())
+
+		chat = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id
+		bot.sendMessage(chat, `Запрос: ${query.join()}`)
+	}
+
 	bot.on('callback_query', function(msg) {
 		// console.log(msg)
 		const answer = msg.data.split('_')
 		const index = answer[0]
 		const button = answer[1]
-		const text = answer[2]
+		const value = answer[2]
 
 		// Данные из примера, пока оставить
 		// if (questions[index].right_answer == button) {
@@ -80,8 +93,22 @@ require('./grabber.js')(function(data) {
 		// }
 
 		// Выводит попап с выбранным значением
-		bot.answerCallbackQuery(msg.id, 'Вы выбрали: ' + text, true)
+		// bot.answerCallbackQuery(msg.id, 'Вы выбрали: ' + value, true)
+		if (index === 'action') {
+			switch (button) {
+				case 'search':
+					return searchResult(msg)
+				case 'repeat':
+					query = []
+					return newQuestion(msg, 0)
+				default:
+			}
+		} else if (index == lastIndex) {
+			query.push(value)
+			searchResult(msg)
+		}
 
+		query.push(value)
 		// Вызываю функцию, которая выводит новый вопрос
 		newQuestion(msg, parseInt(index) + 1)
 	})

@@ -1,18 +1,26 @@
 // Пакет для парсинга сайтов
 const osmosis = require('osmosis')
 
-module.exports = function(callback) {
-	// Классы и типы с сайта олимпиад спарсить не получилось
-	const classes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-	const types = ['Очно', 'Дистанционно']
+// Классы и типы с сайта олимпиад спарсить не получилось
+const classes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+const types = ['Очно', 'Дистанционно']
 
+const addButton = [
+	{ text: '✔ Посмотреть результаты', callback_data: 'action_search' },
+	{ text: '↪ Начать заново', callback_data: 'action_repeat' },
+]
+
+module.exports = function(callback) {
 	// Функция для деления массива кнопок на столбцы
-	function chunkArray(arr, chunk) {
+	function chunkArray(arr, chunk, addButtonFlag = true) {
 		var i,
 			j,
 			tmp = []
 		for (i = 0, j = arr.length; i < j; i += chunk) {
 			tmp.push(arr.slice(i, i + chunk))
+		}
+		if (addButtonFlag) {
+			return [...tmp, addButton]
 		}
 		return tmp
 	}
@@ -26,7 +34,8 @@ module.exports = function(callback) {
 					data.subjects.map(function(subject, index) {
 						return { text: subject, callback_data: '0_' + index + '_' + subject }
 					}),
-					2
+					3,
+					false
 				),
 			},
 			{
@@ -78,6 +87,7 @@ module.exports = function(callback) {
 			titles: ['.fav_olimp .headline'],
 		})
 		.data(function(listing) {
+			// console.log()
 			// Когда данные собрали, передаем их обратно в index.js
 			// По умолчанию я отрпавляю и массив классов и типов
 			callback(generateData({ ...listing, classes, types }))
