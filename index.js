@@ -1,11 +1,34 @@
 // Подкючаем API для работы с Telegram
 const TelegramBot = require('node-telegram-bot-api')
 
+const url = process.env.APP_URL || 'https://edu-telegrambot.herokuapp.com/'
 // Устанавливаем токен, который выдавал нам бот.
 const token = process.env.TOKEN || require('./token.js')
 
 // Включить опрос сервера
-const bot = new TelegramBot(token, { polling: true })
+const bot = new TelegramBot(
+	token,
+	process.env.TOKEN
+		? {
+				webHook: {
+					// Port to which you should bind is assigned to $PORT variable
+					// See: https://devcenter.heroku.com/articles/dynos#local-environment-variables
+					port: process.env.PORT || 3000,
+					// you do NOT need to set up certificates since Heroku provides
+					// the SSL certs already (https://<app-name>.herokuapp.com)
+					// Also no need to pass IP because on Heroku you need to bind to 0.0.0.0
+				},
+			}
+		: {
+				polling: true,
+			}
+)
+
+bot.setWebHook(`${url}/bot${token}`)
+
+bot.on('message', function onMessage(msg) {
+	bot.sendMessage(msg.chat.id, 'I am alive on Heroku!')
+})
 
 let query = {}
 const lastIndex = 4
