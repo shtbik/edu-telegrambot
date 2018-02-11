@@ -71,23 +71,64 @@ require('./src/getInfoForButton.js')(function(data) {
 
 	function getOlympiadsInfo(url, msg) {
 		require('./src/getInfoAboutOlimpiades.js')(url, function(data) {
-			// console.log('asd', data)
+			chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
+
+			function additionalButton(loadmoreFlag) {
+				const addButton = [{ text: '↪ Начать заново', callback_data: 'action_repeat' }]
+
+				// loadmoreFlag && addButton.unshift({ text: '↙ Загрузить еще', callback_data: 'action_loadmore' })
+
+				const options = {
+					reply_markup: JSON.stringify({
+						inline_keyboard: [addButton],
+						parse_mode: 'Markdown',
+					}),
+				}
+				bot.sendMessage(chat, 'Выберите действие: ', options)
+			}
+
+			data.length
+				? data.forEach(function(olympiad, index) {
+						bot
+							.sendMessage(
+								chat,
+								`${olympiad.classes ? olympiad.classes : ''}\n<a href="${olympiad.link}">${
+									olympiad.title
+								}</a>\n${olympiad.description ? `<b>${olympiad.description}</b>` : ''}`,
+								{
+									parse_mode: 'html',
+								}
+							)
+							.then(() => {
+								if (index === data.length - 1) {
+									additionalButton(true)
+								}
+							})
+					})
+				: (function() {
+						bot.sendMessage(chat, 'К сожалению, по данному запросу мы не нашли олимпиад').then(() => {
+							additionalButton(false)
+						})
+					})()
 		})
 	}
 
 	function searchResult(msg) {
 		const userData = query[`user-${msg.from.id}`]
-		const { subject, period, type, classNumber, dist } = userData
-		const queryTitile = Object.keys(userData).map(function(key, index) {
+
+		const { subject = {}, period = {}, type = {}, classNumber = {}, dist = {} } = userData
+		const queryTitle = Object.keys(userData).map(function(key, index) {
 			return userData[key].title
 		})
 		// console.log('Result: ', queryTitile.join(', '))
-		const url = `${dist.value ? `dist=${dist.value}&` : ''}type=${type.value}&${
-			subject.value
-		}=on&class=${classNumber.value}&period_date=&period=${period.value}`
+		const url = `${dist.value ? `dist=${dist.value}&` : ''}${
+			type.value ? `type=${type.value}&` : ''
+		}${subject.value}=on&${classNumber.value ? `class=${classNumber.value}&` : ''}${
+			period.value ? `period=${period.value}` : ''
+		}`
 
 		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
-		bot.sendMessage(chat, `Вы выбрали: ${queryTitile.join(', ')}. Результаты: `)
+		bot.sendMessage(chat, `Вы выбрали: ${queryTitle.join(', ')}. Результаты: `)
 
 		getOlympiadsInfo(url, msg)
 
@@ -131,6 +172,8 @@ require('./src/getInfoForButton.js')(function(data) {
 				case 'repeat':
 					clearUserData(msg)
 					return newQuestion(msg, 0)
+				case 'loadmore':
+					return console.log(query)
 				default:
 			}
 		} else if (index == lastIndex) {

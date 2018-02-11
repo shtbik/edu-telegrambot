@@ -110,4 +110,7 @@ module.exports = function(callback) {
 			// По умолчанию я отрпавляю и массив классов и типов
 			callback(generateData({ ...listing, classes, types }))
 		})
+		// .log(console.log)
+		.error(console.log)
+	// .debug(console.log)
 }
