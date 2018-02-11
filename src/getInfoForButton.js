@@ -32,7 +32,10 @@ module.exports = function(callback) {
 				title: 'Выберите предмет: 📒',
 				buttons: chunkArray(
 					data.subjects.map(function(subject, index) {
-						return { text: subject, callback_data: '0_' + data.subjectsIndex[index] + '_' + subject }
+						return {
+							text: subject,
+							callback_data: '0_' + data.subjectsIndex[index] + '_' + subject + '_subject',
+						}
 					}),
 					3,
 					false
@@ -41,8 +44,12 @@ module.exports = function(callback) {
 			{
 				title: 'Выберите период: 📅',
 				buttons: chunkArray(
-					data.periods.map(function(period, index) {
-						return { text: period, callback_data: '1_' + index + '_' + period }
+					data.periods.filter(period => period !== 'В конкретный день').map(function(period, index) {
+						const param = period === 'Сейчас' ? 'week' : 'year'
+						return {
+							text: period,
+							callback_data: '1_' + param + '_' + period + '_period',
+						}
 					}),
 					2
 				),
@@ -51,7 +58,10 @@ module.exports = function(callback) {
 				title: 'Выберите формат: 💬',
 				buttons: chunkArray(
 					data.formats.map(function(format, index) {
-						return { text: format, callback_data: '2_' + index + '_' + format }
+						return {
+							text: format,
+							callback_data: '2_' + data.formatsIndex[index] + '_' + format + '_type',
+						}
 					}),
 					2
 				),
@@ -60,7 +70,10 @@ module.exports = function(callback) {
 				title: 'Выберите класс: ℹ',
 				buttons: chunkArray(
 					data.classes.map(function(classNumber, index) {
-						return { text: classNumber, callback_data: '3_' + index + '_' + classNumber }
+						return {
+							text: classNumber,
+							callback_data: '3_' + classNumber + '_' + classNumber + '_classNumber',
+						}
 					}),
 					2
 				),
@@ -69,7 +82,11 @@ module.exports = function(callback) {
 				title: 'Выберите тип: 💡',
 				buttons: chunkArray(
 					data.types.map(function(type, index) {
-						return { text: type, callback_data: '4_' + index + '_' + type }
+						const param = type === 'Дистанционно' ? 'on' : ''
+						return {
+							text: type,
+							callback_data: '4_' + param + '_' + type + '_dist',
+						}
 					}),
 					2
 				),
@@ -82,10 +99,11 @@ module.exports = function(callback) {
 		.get('http://www.olimpiada.ru/activities')
 		.set({
 			subjects: ['#subject_filter .sc_sub font', '#subject_filter .sc_pop_sub font'],
-			subjectsIndex: ['#subject_filter .sc_sub input@id', '#subject_filter .sc_pop_sub input@id'],
+			subjectsIndex: ['#subject_filter .sc_sub input@name', '#subject_filter .sc_pop_sub input@name'],
 			periods: ['#top_period label'],
-			formats: ['#activity_filter label'],
-			titles: ['.fav_olimp .headline'],
+			formats: ['#activity_filter td:last-child label'],
+			formatsIndex: ['#activity_filter td:last-child input@value'],
+			// titles: ['.fav_olimp .headline'],
 		})
 		.data(function(listing) {
 			// Когда данные собрали, передаем их обратно в index.js

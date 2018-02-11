@@ -11,7 +11,7 @@ let query = {}
 const lastIndex = 4
 
 // Ассинхронная функция, ожидаем пока получим данные (переменная data) для вопросов
-require('./grabber.js')(function(data) {
+require('./src/getInfoForButton.js')(function(data) {
 	// Запускает процесс, при вводе пользователя команды /start
 	bot.onText(/\/start/, function(msg, match) {
 		// Переменная msg содержит инфомацию о получателе и отправителе приходит с сервера, пример:
@@ -69,11 +69,27 @@ require('./grabber.js')(function(data) {
 		bot.sendMessage(chat, text, options)
 	}
 
+	function getOlympiadsInfo(url, msg) {
+		require('./src/getInfoAboutOlimpiades.js')(url, function(data) {
+			// console.log('asd', data)
+		})
+	}
+
 	function searchResult(msg) {
-		console.log('Result: ', query[`user-${msg.from.id}`].join())
+		const userData = query[`user-${msg.from.id}`]
+		const { subject, period, type, classNumber, dist } = userData
+		const queryTitile = Object.keys(userData).map(function(key, index) {
+			return userData[key].title
+		})
+		// console.log('Result: ', queryTitile.join(', '))
+		const url = `${dist.value ? `dist=${dist.value}&` : ''}type=${type.value}&${
+			subject.value
+		}=on&class=${classNumber.value}&period_date=&period=${period.value}`
 
 		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
-		bot.sendMessage(chat, `Запрос: ${query[`user-${msg.from.id}`].join()}`)
+		bot.sendMessage(chat, `Вы выбрали: ${queryTitile.join(', ')}. Результаты: `)
+
+		getOlympiadsInfo(url, msg)
 
 		// Чистим данные пользовательской сессии
 		clearUserData(msg)
@@ -87,7 +103,7 @@ require('./grabber.js')(function(data) {
 	// Функция проверки данных для пользователя
 	function checkUserData(msg) {
 		return (query[`user-${msg.from.id}`] =
-			query[`user-${msg.from.id}`] === undefined ? [] : query[`user-${msg.from.id}`])
+			query[`user-${msg.from.id}`] === undefined ? {} : query[`user-${msg.from.id}`])
 	}
 
 	bot.on('callback_query', function(msg) {
@@ -95,6 +111,7 @@ require('./grabber.js')(function(data) {
 		const index = answer[0]
 		const button = answer[1]
 		const value = answer[2]
+		const param = answer[3]
 		// Данные из примера, пока оставить
 		// if (questions[index].right_answer == button) {
 		// 	bot.sendMessage(msg.from.id, 'Ответ верный ✅')
@@ -117,12 +134,20 @@ require('./grabber.js')(function(data) {
 				default:
 			}
 		} else if (index == lastIndex) {
-			queryUser.push(value)
+			queryUser[param] = {
+				title: value,
+				value: button,
+			}
+			// console.log(query)
 			searchResult(msg)
 		}
 
 		// Добавляю новое значение в запрос пользователя
-		queryUser.push(value)
+		queryUser[param] = {
+			title: value,
+			value: button,
+		}
+		// console.log(query)
 		// Вызываю функцию, которая выводит новый вопрос
 		newQuestion(msg, parseInt(index) + 1)
 	})
