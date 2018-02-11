@@ -7,15 +7,13 @@ const token = process.env.TOKEN || require('./token.js')
 // Включить опрос сервера
 const bot = new TelegramBot(token, { polling: true })
 
-let query = []
+let query = {}
 const lastIndex = 4
 
 // Ассинхронная функция, ожидаем пока получим данные (переменная data) для вопросов
 require('./grabber.js')(function(data) {
 	// Запускает процесс, при вводе пользователя команды /start
 	bot.onText(/\/start/, function(msg, match) {
-		// По умолчанию индекс вопроса 0
-
 		// Переменная msg содержит инфомацию о получателе и отправителе приходит с сервера, пример:
 		// const msg = {
 		// 	message_id: 308,
@@ -39,8 +37,8 @@ require('./grabber.js')(function(data) {
 		// 	entities: [{ offset: 0, length: 6, type: 'bot_command' }],
 		// }
 
+		// По умолчанию индекс вопроса 0
 		// Сбрасываем значения от предыдущих владельцев
-		query = []
 		newQuestion(msg, 0)
 	})
 
@@ -65,26 +63,38 @@ require('./grabber.js')(function(data) {
 			}),
 		}
 
-		chat = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id
+		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
 
 		// Отправляем сообщение в чат
 		bot.sendMessage(chat, text, options)
 	}
 
 	function searchResult(msg) {
-		console.log('Result: ', query.join())
+		console.log('Result: ', query[`user-${msg.from.id}`].join())
 
-		chat = msg.hasOwnProperty('chat') ? msg.chat.id : msg.from.id
-		bot.sendMessage(chat, `Запрос: ${query.join()}`)
+		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
+		bot.sendMessage(chat, `Запрос: ${query[`user-${msg.from.id}`].join()}`)
+
+		// Чистим данные пользовательской сессии
+		clearUserData(msg)
+	}
+
+	// Сборщик мусора, удаляем данные пользователя, когда выполнено целевое действие
+	function clearUserData(msg) {
+		delete query[`user-${msg.from.id}`]
+	}
+
+	// Функция проверки данных для пользователя
+	function checkUserData(msg) {
+		return (query[`user-${msg.from.id}`] =
+			query[`user-${msg.from.id}`] === undefined ? [] : query[`user-${msg.from.id}`])
 	}
 
 	bot.on('callback_query', function(msg) {
-		// console.log(msg)
 		const answer = msg.data.split('_')
 		const index = answer[0]
 		const button = answer[1]
 		const value = answer[2]
-
 		// Данные из примера, пока оставить
 		// if (questions[index].right_answer == button) {
 		// 	bot.sendMessage(msg.from.id, 'Ответ верный ✅')
@@ -94,21 +104,25 @@ require('./grabber.js')(function(data) {
 
 		// Выводит попап с выбранным значением
 		// bot.answerCallbackQuery(msg.id, 'Вы выбрали: ' + value, true)
+
+		const queryUser = checkUserData(msg)
+
 		if (index === 'action') {
 			switch (button) {
 				case 'search':
 					return searchResult(msg)
 				case 'repeat':
-					query = []
+					clearUserData(msg)
 					return newQuestion(msg, 0)
 				default:
 			}
 		} else if (index == lastIndex) {
-			query.push(value)
+			queryUser.push(value)
 			searchResult(msg)
 		}
 
-		query.push(value)
+		// Добавляю новое значение в запрос пользователя
+		queryUser.push(value)
 		// Вызываю функцию, которая выводит новый вопрос
 		newQuestion(msg, parseInt(index) + 1)
 	})

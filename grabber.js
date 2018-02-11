@@ -32,7 +32,7 @@ module.exports = function(callback) {
 				title: 'Выберите предмет: 📒',
 				buttons: chunkArray(
 					data.subjects.map(function(subject, index) {
-						return { text: subject, callback_data: '0_' + index + '_' + data.subjectsIndex[index] }
+						return { text: subject, callback_data: '0_' + data.subjectsIndex[index] + '_' + subject }
 					}),
 					3,
 					false
@@ -88,7 +88,6 @@ module.exports = function(callback) {
 			titles: ['.fav_olimp .headline'],
 		})
 		.data(function(listing) {
-			console.log(listing.subjects.length, listing.subjectsIndex.length)
 			// Когда данные собрали, передаем их обратно в index.js
 			// По умолчанию я отрпавляю и массив классов и типов
 			callback(generateData({ ...listing, classes, types }))
