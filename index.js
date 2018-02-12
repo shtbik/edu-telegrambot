@@ -151,7 +151,7 @@ require('./src/getInfoForButton.js')(function(data) {
 		}`
 
 		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
-		bot.sendMessage(chat, `Вы выбрали: ${queryTitle.join(', ')}. Результаты: `)
+		// bot.sendMessage(chat, `Вы выбрали: ${queryTitle.join(', ')}. Результаты: `)
 
 		getOlympiadsInfo(url, msg)
 
@@ -205,7 +205,7 @@ require('./src/getInfoForButton.js')(function(data) {
 				value: button,
 			}
 			// console.log(query)
-			searchResult(msg)
+			return searchResult(msg)
 		}
 
 		// Добавляю новое значение в запрос пользователя
