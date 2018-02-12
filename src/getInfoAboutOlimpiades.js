@@ -35,13 +35,14 @@ module.exports = function(url, callback) {
 			// additionalInfo: ['.fav_olimp a .headline.red'],
 			description: ['.fav_olimp .olimp_desc'],
 			rating: ['.fav_olimp .pl_rating'],
+			commonCount: ['.content #megatitle'],
 		})
 		.data(function(listing) {
 			// Когда данные собрали, передаем их обратно в index.js
 			// По умолчанию я отрпавляю и массив классов и типов
 			// console.log(listing, listing.titles.length)
 			// callback({ ...listing })
-			callback(generateData({ ...listing }))
+			callback(generateData({ ...listing }), listing.commonCount)
 		})
 		// .log(console.log)
 		.error(console.log)

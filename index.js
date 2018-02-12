@@ -92,14 +92,20 @@ require('./src/getInfoForButton.js')(function(data) {
 		bot.sendMessage(chat, text, options)
 	}
 
-	function getOlympiadsInfo(url, msg) {
-		require('./src/getInfoAboutOlimpiades.js')(url, function(data) {
+	function getOlympiadsInfo(url, msg, cnow = undefined) {
+		require('./src/getInfoAboutOlimpiades.js')(url, function(data, commonCount = ['']) {
+			const countOlmp = commonCount[0].replace(/\D*\s+\S+/g, '') || 0
+			console.log('cnow', cnow)
 			chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
-
 			function additionalButton(loadmoreFlag) {
 				const addButton = [{ text: '↪ Начать заново', callback_data: 'action_repeat' }]
-
-				// loadmoreFlag && addButton.unshift({ text: '↙ Загрузить еще', callback_data: 'action_loadmore' })
+				loadmoreFlag &&
+					parseInt(countOlmp) > 20 &&
+					cnow !== false &&
+					addButton.unshift({
+						text: '↙ Загрузить еще',
+						callback_data: `action_l_${url}_${countOlmp}`,
+					})
 
 				const options = {
 					reply_markup: JSON.stringify({
@@ -107,10 +113,11 @@ require('./src/getInfoForButton.js')(function(data) {
 						parse_mode: 'Markdown',
 					}),
 				}
+
 				bot.sendMessage(chat, 'Выберите действие: ', options)
 			}
 
-			data.length
+			data.length && cnow !== false
 				? data.forEach(function(olympiad, index) {
 						bot
 							.sendMessage(
@@ -144,24 +151,36 @@ require('./src/getInfoForButton.js')(function(data) {
 			return userData[key].title
 		})
 		// console.log('Result: ', queryTitile.join(', '))
-		const url = `${dist.value ? `dist=${dist.value}&` : ''}${
-			type.value ? `type=${type.value}&` : ''
-		}${subject.value}=on&${classNumber.value ? `class=${classNumber.value}&` : ''}${
-			period.value ? `period=${period.value}` : ''
+		const url = `${subject.value}=on${dist.value ? `&dist=${dist.value}&` : ''}${
+			type.value ? `&type=${type.value}` : ''
+		}${classNumber.value ? `&class=${classNumber.value}` : ''}${
+			period.value ? `&period=${period.value}` : ''
 		}`
 
 		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
 		// bot.sendMessage(chat, `Вы выбрали: ${queryTitle.join(', ')}. Результаты: `)
 
+		console.log('URL1', url)
 		getOlympiadsInfo(url, msg)
 
 		// Чистим данные пользовательской сессии
-		clearUserData(msg)
+		// clearUserData(msg)
 	}
 
 	// Сборщик мусора, удаляем данные пользователя, когда выполнено целевое действие
 	function clearUserData(msg) {
 		delete query[`user-${msg.from.id}`]
+	}
+
+	function getUrlVars(url) {
+		let hash
+		let myJson = {}
+		const hashes = url.slice(url.indexOf('?') + 1).split('&')
+		for (let i = 0; i < hashes.length; i++) {
+			hash = hashes[i].split('=')
+			myJson[hash[0]] = hash[1]
+		}
+		return myJson
 	}
 
 	// Функция проверки данных для пользователя
@@ -195,8 +214,32 @@ require('./src/getInfoForButton.js')(function(data) {
 				case 'repeat':
 					clearUserData(msg)
 					return newQuestion(msg, 0)
-				case 'loadmore':
-					return console.log(query)
+				// case: 'loadmore' потому, что я превысил лимит в 64 байта
+				case 'l':
+					console.log('countOlmp', param)
+					let urlParams = getUrlVars(value)
+
+					let { cnow = 0 } = urlParams
+					cnow = parseInt(cnow)
+					// console.log(param - (cnow + 60), cnow <= param - 20)
+					if (cnow) {
+						if (cnow <= param - 20) {
+							cnow = cnow + 20
+						} else {
+							cnow = false
+						}
+					} else {
+						cnow = 20
+					}
+
+					let urlString = Object.entries({ ...urlParams, cnow: cnow })
+						.map(e => e[0] + '=' + e[1])
+						// .map(e => encodeURIComponent(e[0]) + '=' + encodeURIComponent(e[1]))
+						.join('&')
+					// console.log(param, cnow, { ...urlParams, cnow: cnow }, urlString)
+
+					return getOlympiadsInfo(urlString, msg, cnow)
+				// return false
 				default:
 			}
 		} else if (index == lastIndex) {
