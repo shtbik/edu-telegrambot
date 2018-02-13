@@ -1,6 +1,8 @@
-// Подкючаем API для работы с Telegram
+// Подкючаем пакет для работы с API Telegram
 const TelegramBot = require('node-telegram-bot-api')
 
+// process.env - это переменные окружения
+// Устанавливаем адрес сервера, где запущено приложение
 const url = process.env.APP_URL || 'https://edu-telegrambot.herokuapp.com/'
 // Устанавливаем токен, который выдавал нам бот.
 const token = process.env.TOKEN || require('./token.js')
@@ -8,15 +10,12 @@ const token = process.env.TOKEN || require('./token.js')
 // Включить опрос сервера
 const bot = new TelegramBot(
 	token,
+	// Делаем проверку, если токен приходит с сервера, значит приложение запущено удаленно, и тогда мы меняем конфигурацию запуска
 	process.env.TOKEN
 		? {
 				webHook: {
-					// Port to which you should bind is assigned to $PORT variable
-					// See: https://devcenter.heroku.com/articles/dynos#local-environment-variables
+					// Порт на котором запущено наше приложение
 					port: process.env.PORT || 8000,
-					// you do NOT need to set up certificates since Heroku provides
-					// the SSL certs already (https://<app-name>.herokuapp.com)
-					// Also no need to pass IP because on Heroku you need to bind to 0.0.0.0
 				},
 			}
 		: {
@@ -24,17 +23,30 @@ const bot = new TelegramBot(
 			}
 )
 
-bot.setWebHook(`${url}/bot${token}`)
+// Передаем нашему боту хук, если запус с удаленного сервера
+process.env.TOKEN && bot.setWebHook(`${url}/bot${token}`)
 
-bot.on('message', function onMessage(msg) {
-	bot.sendMessage(msg.chat.id, 'I am alive on Heroku!')
-})
-
+// query - переменная запроса, где мы храним данные запросов для всех пользователей
 let query = {}
+// индекс последнейго вопроса
 const lastIndex = 4
+// Максимальное число элементов для допольнительной загрузки
+const maxElements = 40
 
 // Ассинхронная функция, ожидаем пока получим данные (переменная data) для вопросов
 require('./src/getInfoForButton.js')(function(data) {
+	// Функция выводи сообщение по команде /help
+	bot.onText(/\/help/, function(msg, match) {
+		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
+		bot.sendMessage(
+			chat,
+			`📧 Если у Вас есть вопросы и предложения, <a href="https://telegram.me/shtbik">свяжитесь со мной</a>`,
+			{
+				parse_mode: 'html',
+			}
+		)
+	})
+
 	// Запускает процесс, при вводе пользователя команды /start
 	bot.onText(/\/start/, function(msg, match) {
 		// Переменная msg содержит инфомацию о получателе и отправителе приходит с сервера, пример:
@@ -65,20 +77,10 @@ require('./src/getInfoForButton.js')(function(data) {
 		newQuestion(msg, 0)
 	})
 
-	bot.onText(/\/help/, function(msg, match) {
-		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
-
-		bot.sendMessage(
-			chat,
-			`📧 Если у Вас есть вопросы и предложения, <a href="https://telegram.me/shtbik">свяжитесь со мной</a>`,
-			{
-				parse_mode: 'html',
-			}
-		)
-	})
-
+	// Функция берет необходимые данные для кнопок по индексу
 	function getQuestion(indexQuestion) {
-		// Данные (data) берем из файла ./gabber.js
+		// Данные (data) приходят из файла ./getInfoForButton.js
+		// indexQuestion - хранится в каждой кнопке
 		return data[indexQuestion]
 	}
 
@@ -104,6 +106,7 @@ require('./src/getInfoForButton.js')(function(data) {
 		bot.sendMessage(chat, text, options)
 	}
 
+	// Выводит олимпиады по собранным критериям
 	function getOlympiadsInfo(url, msg, cnow = undefined) {
 		require('./src/getInfoAboutOlimpiades.js')(url, function(data, commonCount = ['']) {
 			const countOlmp = commonCount[0].replace(/\D*\s+\S+/g, '') || 0
@@ -141,6 +144,7 @@ require('./src/getInfoForButton.js')(function(data) {
 								}${olympiad.rating ? `\n\n<b>⭐ ${olympiad.rating} - рейтинг</b>` : ''}`,
 								{
 									parse_mode: 'html',
+									// disable_web_page_preview: true,
 								}
 							)
 							.then(() => {
@@ -228,16 +232,17 @@ require('./src/getInfoForButton.js')(function(data) {
 					return newQuestion(msg, 0)
 				// case: 'loadmore' потому, что я превысил лимит в 64 байта
 				case 'l':
-					console.log('countOlmp', param)
+					// console.log('countOlmp', param)
 					let urlParams = getUrlVars(value)
 
+					// TODO cnow не многопоточен!!!
 					let { cnow = 0 } = urlParams
 					cnow = parseInt(cnow)
 					console.log(cnow, param - 20, cnow <= param - 20)
 
 					// Откуда число 60, чтобы не превыышать лемиты телеги
 					if (cnow) {
-						if (cnow <= param - 20 && cnow <= 60) {
+						if (cnow <= param - 20 && cnow <= maxElements) {
 							cnow = cnow + 20
 						} else {
 							cnow = false
