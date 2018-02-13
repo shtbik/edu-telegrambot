@@ -65,6 +65,18 @@ require('./src/getInfoForButton.js')(function(data) {
 		newQuestion(msg, 0)
 	})
 
+	bot.onText(/\/help/, function(msg, match) {
+		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
+
+		bot.sendMessage(
+			chat,
+			`📧 Если у Вас есть вопросы и предложения, <a href="https://telegram.me/shtbik">свяжитесь со мной</a>`,
+			{
+				parse_mode: 'html',
+			}
+		)
+	})
+
 	function getQuestion(indexQuestion) {
 		// Данные (data) берем из файла ./gabber.js
 		return data[indexQuestion]
@@ -114,17 +126,19 @@ require('./src/getInfoForButton.js')(function(data) {
 					}),
 				}
 
-				bot.sendMessage(chat, 'Выберите действие: ', options)
+				bot.sendMessage(chat, 'Выберите действие: ⬇', options)
 			}
 
-			data.length && cnow !== false
+			data.length
 				? data.forEach(function(olympiad, index) {
 						bot
 							.sendMessage(
 								chat,
-								`${olympiad.classes ? olympiad.classes : ''}\n<a href="${olympiad.link}">${
-									olympiad.title
-								}</a>\n${olympiad.description ? `<b>${olympiad.description}</b>` : ''}`,
+								`${olympiad.classes ? `<b>ℹ ${olympiad.classes}</b>\n\n` : ''}<a href="${
+									olympiad.link
+								}">🔗 ${olympiad.title}</a>${
+									olympiad.description ? `\n\n<b>📚 ${olympiad.description}</b>` : ''
+								}${olympiad.rating ? `\n\n<b>⭐ ${olympiad.rating} - рейтинг</b>` : ''}`,
 								{
 									parse_mode: 'html',
 								}
@@ -159,8 +173,6 @@ require('./src/getInfoForButton.js')(function(data) {
 
 		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
 		// bot.sendMessage(chat, `Вы выбрали: ${queryTitle.join(', ')}. Результаты: `)
-
-		console.log('URL1', url)
 		getOlympiadsInfo(url, msg)
 
 		// Чистим данные пользовательской сессии
@@ -221,9 +233,11 @@ require('./src/getInfoForButton.js')(function(data) {
 
 					let { cnow = 0 } = urlParams
 					cnow = parseInt(cnow)
-					// console.log(param - (cnow + 60), cnow <= param - 20)
+					console.log(cnow, param - 20, cnow <= param - 20)
+
+					// Откуда число 60, чтобы не превыышать лемиты телеги
 					if (cnow) {
-						if (cnow <= param - 20) {
+						if (cnow <= param - 20 && cnow <= 60) {
 							cnow = cnow + 20
 						} else {
 							cnow = false
