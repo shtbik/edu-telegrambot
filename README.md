@@ -2,6 +2,8 @@
 
 NodeJS telegrambot with inline-keyboards
 
+![](http://ibb.co/dNydmS)
+
 ### **1. Install git**
 
 Go to [git site](https://git-scm.com/downloads) and download/install a version for your OS
