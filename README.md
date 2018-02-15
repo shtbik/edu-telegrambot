@@ -1,4 +1,4 @@
-# edu-telegrambot @schoolOlympiadsBot
+# edu-telegrambot [@schoolOlympiadsBot](https://t.me/schoolOlympiadsBot)
 
 NodeJS telegrambot with inline-keyboards
 
