@@ -2,7 +2,7 @@
 
 NodeJS telegrambot with inline-keyboards
 
-![](http://ibb.co/dNydmS)
+![](https://i.imgur.com/PgdYqb9.gif)
 
 ### **1. Install git**
 
