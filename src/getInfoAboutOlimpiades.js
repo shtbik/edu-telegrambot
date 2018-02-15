@@ -23,7 +23,7 @@ module.exports = function(url, callback) {
 		})
 	}
 
-	console.log(`http://www.olimpiada.ru/activities?${url}`)
+	// console.log(`http://www.olimpiada.ru/activities?${url}`)
 	// Парсим данные с сайта по ссылке ниже
 	// http://www.olimpiada.ru/include/activity/megalist.php
 	osmosis
@@ -39,9 +39,6 @@ module.exports = function(url, callback) {
 		})
 		.data(function(listing) {
 			// Когда данные собрали, передаем их обратно в index.js
-			// По умолчанию я отрпавляю и массив классов и типов
-			// console.log(listing, listing.titles.length)
-			// callback({ ...listing })
 			callback(generateData({ ...listing }), listing.commonCount)
 		})
 		// .log(console.log)

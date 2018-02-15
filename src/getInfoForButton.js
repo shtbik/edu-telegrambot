@@ -31,7 +31,7 @@ module.exports = function(callback) {
 			{
 				title: 'Выберите предмет: 📒',
 				buttons: chunkArray(
-					data.subjects.map(function(subject, index) {
+					data.subjects.filter(subject => subject !== 'Ин. языки').map(function(subject, index) {
 						return {
 							text: subject,
 							callback_data: '0_' + data.subjectsIndex[index] + '_' + subject + '_subject',
@@ -107,7 +107,7 @@ module.exports = function(callback) {
 		})
 		.data(function(listing) {
 			// Когда данные собрали, передаем их обратно в index.js
-			// По умолчанию я отрпавляю и массив классов и типов
+			// По умолчанию я храню массив классов и типов
 			callback(generateData({ ...listing, classes, types }))
 		})
 		// .log(console.log)

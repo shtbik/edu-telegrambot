@@ -31,15 +31,16 @@ let query = {}
 // индекс последнейго вопроса
 const lastIndex = 4
 // Максимальное число элементов для допольнительной загрузки
+// Больше нельзя, т.к. телеграм ограничивает
 const maxElements = 40
 
 // Ассинхронная функция, ожидаем пока получим данные (переменная data) для вопросов
 require('./src/getInfoForButton.js')(function(data) {
-	// Функция выводи сообщение по команде /help
+	// Функция выводит сообщение по команде /help
 	bot.onText(/\/help/, function(msg, match) {
-		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
+		chatId = msg.from.id
 		bot.sendMessage(
-			chat,
+			chatId,
 			`📧 Если у Вас есть вопросы и предложения, <a href="https://telegram.me/shtbik">свяжитесь со мной</a>`,
 			{
 				parse_mode: 'html',
@@ -60,7 +61,7 @@ require('./src/getInfoForButton.js')(function(data) {
 		// 		username: 'shtbik',
 		// 		language_code: 'ru-RU',
 		// 	},
-		// 	chat: {
+		// 	chatId: {
 		// 		id: 144755140,
 		// 		first_name: 'Alexander',
 		// 		last_name: 'Shtykov',
@@ -72,14 +73,16 @@ require('./src/getInfoForButton.js')(function(data) {
 		// 	entities: [{ offset: 0, length: 6, type: 'bot_command' }],
 		// }
 
-		// По умолчанию индекс вопроса 0
 		// Сбрасываем значения от предыдущих владельцев
+		clearUserData(msg)
+
+		// По умолчанию индекс вопроса 0, выводим кнопки с предметами
 		newQuestion(msg, 0)
 	})
 
 	// Функция берет необходимые данные для кнопок по индексу
 	function getQuestion(indexQuestion) {
-		// Данные (data) приходят из файла ./getInfoForButton.js
+		// Данные (data) приходят из файла ./src/getInfoForButton.js
 		// indexQuestion - хранится в каждой кнопке
 		return data[indexQuestion]
 	}
@@ -100,20 +103,29 @@ require('./src/getInfoForButton.js')(function(data) {
 			}),
 		}
 
-		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
+		// Получаем id чата, куда отправить сообщение
+		chatId = msg.from.id
 
-		// Отправляем сообщение в чат
-		bot.sendMessage(chat, text, options)
+		// Отправляем сообщение в чат с параметрами
+		bot.sendMessage(chatId, text, options)
 	}
 
 	// Выводит олимпиады по собранным критериям
+	// url - для запроса
+	// cnow - счетчик для допольнительной подгрузки
 	function getOlympiadsInfo(url, msg, cnow = undefined) {
 		require('./src/getInfoAboutOlimpiades.js')(url, function(data, commonCount = ['']) {
+			// Регулярное выражение для получения общего числа олимпиад
 			const countOlmp = commonCount[0].replace(/\D*\s+\S+/g, '') || 0
-			console.log('cnow', cnow)
-			chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
+
+			// Получаем id чата
+			chatId = msg.from.id
+
+			// Добавляем кнопки, после вывода олимпиад
 			function additionalButton(loadmoreFlag) {
 				const addButton = [{ text: '↪ Начать заново', callback_data: 'action_repeat' }]
+				// Если счетчик cnow переполнен или countOlmp не достаточно большой
+				// или loadmoreFlag = false, то не выводим доп. кнопку
 				loadmoreFlag &&
 					parseInt(countOlmp) > 20 &&
 					cnow !== false &&
@@ -129,14 +141,16 @@ require('./src/getInfoForButton.js')(function(data) {
 					}),
 				}
 
-				bot.sendMessage(chat, 'Выберите действие: ⬇', options)
+				// Отправляем сообщение
+				bot.sendMessage(chatId, 'Выберите действие: ⬇', options)
 			}
 
+			// Проверка, получили ли мы олимпиады
 			data.length
 				? data.forEach(function(olympiad, index) {
 						bot
 							.sendMessage(
-								chat,
+								chatId,
 								`${olympiad.classes ? `<b>ℹ ${olympiad.classes}</b>\n\n` : ''}<a href="${
 									olympiad.link
 								}">🔗 ${olympiad.title}</a>${
@@ -147,6 +161,7 @@ require('./src/getInfoForButton.js')(function(data) {
 									// disable_web_page_preview: true,
 								}
 							)
+							// callback функцкия, когда выводить доп.кнопки
 							.then(() => {
 								if (index === data.length - 1) {
 									additionalButton(true)
@@ -154,14 +169,16 @@ require('./src/getInfoForButton.js')(function(data) {
 							})
 					})
 				: (function() {
-						bot.sendMessage(chat, 'К сожалению, по данному запросу мы не нашли олимпиад').then(() => {
+						bot.sendMessage(chatId, 'К сожалению, по данному запросу мы не нашли олимпиад').then(() => {
 							additionalButton(false)
 						})
 					})()
 		})
 	}
 
+	// Функция поиска результата и формирования запроса к парсингу
 	function searchResult(msg) {
+		// Получаем пользовательский запрос
 		const userData = query[`user-${msg.from.id}`]
 
 		const { subject = {}, period = {}, type = {}, classNumber = {}, dist = {} } = userData
@@ -169,14 +186,17 @@ require('./src/getInfoForButton.js')(function(data) {
 			return userData[key].title
 		})
 		// console.log('Result: ', queryTitile.join(', '))
+
+		// Формируем url
 		const url = `${subject.value}=on${dist.value ? `&dist=${dist.value}&` : ''}${
 			type.value ? `&type=${type.value}` : ''
 		}${classNumber.value ? `&class=${classNumber.value}` : ''}${
 			period.value ? `&period=${period.value}` : ''
 		}`
 
-		chat = msg.hasOwnProperty('chat') ? msg.from.id : msg.from.id
-		// bot.sendMessage(chat, `Вы выбрали: ${queryTitle.join(', ')}. Результаты: `)
+		chatId = msg.from.id
+
+		// Отправляем подготовленные данные
 		getOlympiadsInfo(url, msg)
 
 		// Чистим данные пользовательской сессии
@@ -188,6 +208,7 @@ require('./src/getInfoForButton.js')(function(data) {
 		delete query[`user-${msg.from.id}`]
 	}
 
+	// Вспомогательная функция (helper) - для преобразования параметров url в формат JSON
 	function getUrlVars(url) {
 		let hash
 		let myJson = {}
@@ -205,42 +226,40 @@ require('./src/getInfoForButton.js')(function(data) {
 			query[`user-${msg.from.id}`] === undefined ? {} : query[`user-${msg.from.id}`])
 	}
 
+	// Функция срабатыващая при нажатии на кнопки бота
 	bot.on('callback_query', function(msg) {
+		// Вытаскиваю параметры из кнопки
 		const answer = msg.data.split('_')
 		const index = answer[0]
 		const button = answer[1]
 		const value = answer[2]
 		const param = answer[3]
-		// Данные из примера, пока оставить
-		// if (questions[index].right_answer == button) {
-		// 	bot.sendMessage(msg.from.id, 'Ответ верный ✅')
-		// } else {
-		// 	bot.sendMessage(msg.from.id, 'Ответ неверный ❌')
-		// }
 
 		// Выводит попап с выбранным значением
 		// bot.answerCallbackQuery(msg.id, 'Вы выбрали: ' + value, true)
 
+		// Провека, если уже данные пользователя в памяти
 		const queryUser = checkUserData(msg)
 
+		// Смотрю тип действия
 		if (index === 'action') {
 			switch (button) {
 				case 'search':
 					return searchResult(msg)
 				case 'repeat':
+					// Чищу данные, если нажата кнопка "Начать заново"
 					clearUserData(msg)
 					return newQuestion(msg, 0)
-				// case: 'loadmore' потому, что я превысил лимит в 64 байта
+				// case: 'loadmore' потому, что я превысил лимит в 64 байта для передаваемых параметров
 				case 'l':
-					// console.log('countOlmp', param)
+					// Получаю параметры пользователя в формате JSON
 					let urlParams = getUrlVars(value)
 
-					// TODO cnow не многопоточен!!!
+					// cnow - счетчик выведенных данных
 					let { cnow = 0 } = urlParams
 					cnow = parseInt(cnow)
-					console.log(cnow, param - 20, cnow <= param - 20)
 
-					// Откуда число 60, чтобы не превыышать лемиты телеги
+					// Логика доп. подгрузки олимпиад
 					if (cnow) {
 						if (cnow <= param - 20 && cnow <= maxElements) {
 							cnow = cnow + 20
@@ -251,14 +270,14 @@ require('./src/getInfoForButton.js')(function(data) {
 						cnow = 20
 					}
 
+					// Преобразование параметров JSON в формак url query
 					let urlString = Object.entries({ ...urlParams, cnow: cnow })
 						.map(e => e[0] + '=' + e[1])
 						// .map(e => encodeURIComponent(e[0]) + '=' + encodeURIComponent(e[1]))
 						.join('&')
-					// console.log(param, cnow, { ...urlParams, cnow: cnow }, urlString)
 
+					// Отправляю данные в функцию получения олимпиады
 					return getOlympiadsInfo(urlString, msg, cnow)
-				// return false
 				default:
 			}
 		} else if (index == lastIndex) {
@@ -266,7 +285,8 @@ require('./src/getInfoForButton.js')(function(data) {
 				title: value,
 				value: button,
 			}
-			// console.log(query)
+
+			// Отправляю данные в функцию для поиска результатов
 			return searchResult(msg)
 		}
 
@@ -275,7 +295,7 @@ require('./src/getInfoForButton.js')(function(data) {
 			title: value,
 			value: button,
 		}
-		// console.log(query)
+
 		// Вызываю функцию, которая выводит новый вопрос
 		newQuestion(msg, parseInt(index) + 1)
 	})
