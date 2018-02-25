@@ -41,7 +41,7 @@ require('./src/getInfoForButton.js')(function(data) {
 		chatId = msg.from.id
 		bot.sendMessage(
 			chatId,
-			`📧 Если у Вас есть вопросы и предложения, <a href="https://telegram.me/shtbik">свяжитесь со мной</a>`,
+			`📧 Если у Вас есть вопросы и предложения, <a href="https://telegram.me/Trickster22">свяжитесь со мной</a>`,
 			{
 				parse_mode: 'html',
 			}
